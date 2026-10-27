@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Bootstrap config for Openfire. Placeholders are filled in from the environment by init.sh
+    on first start only. Openfire runs the <autosetup> block once (skipping the web setup
+    wizard), then removes it from the file.
+
+    Values are inserted verbatim, so avoid the XML-special characters < > & in them.
+-->
+<jive>
+    <adminConsole>
+        <port>9090</port>
+        <securePort>9091</securePort>
+    </adminConsole>
+
+    <locale>en</locale>
+
+    <!-- Embedded HSQLDB, stored in the data volume. Autosetup only configures external
+         databases, so the provider is declared here directly. -->
+    <connectionProvider>
+        <className>org.jivesoftware.database.EmbeddedConnectionProvider</className>
+    </connectionProvider>
+
+    <autosetup>
+        <run>true</run>
+        <locale>en</locale>
+        <xmpp>
+            <domain>${XMPP_DOMAIN}</domain>
+            <fqdn>${XMPP_FQDN}</fqdn>
+            <auth>
+                <anonymous>false</anonymous>
+            </auth>
+            <socket>
+                <ssl>
+                    <active>true</active>
+                </ssl>
+            </socket>
+        </xmpp>
+        <admin>
+            <email>${OPENFIRE_ADMIN_EMAIL}</email>
+            <password>${OPENFIRE_ADMIN_PASSWORD}</password>
+        </admin>
+        <authprovider>
+            <mode>default</mode>
+        </authprovider>
+        <users>
+            <user1>
+                <username>${XMPP_USER}</username>
+                <password>${XMPP_USER_PASSWORD}</password>
+                <name>${XMPP_USER_NAME}</name>
+                <email>${XMPP_USER_EMAIL}</email>
+            </user1>
+        </users>
+    </autosetup>
+</jive>

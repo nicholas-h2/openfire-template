@@ -1,0 +1,59 @@
+name: openfire
+
+x-openfire-env: &openfire-env
+  XMPP_DOMAIN: ${XMPP_DOMAIN}
+  XMPP_FQDN: ${XMPP_FQDN}
+  OPENFIRE_ADMIN_EMAIL: ${OPENFIRE_ADMIN_EMAIL}
+  OPENFIRE_ADMIN_PASSWORD: ${OPENFIRE_ADMIN_PASSWORD}
+  XMPP_USER: ${XMPP_USER}
+  XMPP_USER_PASSWORD: ${XMPP_USER_PASSWORD}
+  XMPP_USER_NAME: ${XMPP_USER_NAME}
+  XMPP_USER_EMAIL: ${XMPP_USER_EMAIL}
+  XMPP_ROOM: ${XMPP_ROOM}
+  XMPP_ROOM_NAME: ${XMPP_ROOM_NAME}
+  XMPP_ROOM_DESCRIPTION: ${XMPP_ROOM_DESCRIPTION}
+
+services:
+  openfire:
+    image: ${OPENFIRE_IMAGE}
+    container_name: openfire
+    restart: unless-stopped
+    entrypoint: ["/bin/bash", "/docker/init.sh"]
+    environment: *openfire-env
+    ports:
+      - "5222:5222"   # XMPP client connections (STARTTLS)
+      - "5223:5223"   # XMPP client connections (direct TLS)
+      - "5269:5269"   # server-to-server federation
+      - "7070:7070"   # BOSH / WebSocket (HTTP)
+      - "7443:7443"   # BOSH / WebSocket (HTTPS)
+      - "9090:9090"   # admin console + REST API (HTTP)
+      - "9091:9091"   # admin console + REST API (HTTPS)
+    volumes:
+      - openfire-data:/var/lib/openfire
+      - openfire-logs:/var/log/openfire
+      - ./openfire/init.sh:/docker/init.sh:ro
+      - ./openfire/openfire.xml.template:/docker/openfire.xml.template:ro
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "-o", "/dev/null", "http://localhost:9090/login.jsp"]
+      interval: 5s
+      timeout: 5s
+      start_period: 120s
+      retries: 30
+
+  # One-shot job: creates the default chat room through the REST API, then exits.
+  openfire-provision:
+    image: ${OPENFIRE_IMAGE}
+    depends_on:
+      openfire:
+        condition: service_healthy
+    entrypoint: ["/bin/bash", "/docker/provision.sh"]
+    environment:
+      <<: *openfire-env
+      OPENFIRE_URL: http://openfire:9090
+    volumes:
+      - ./openfire/provision.sh:/docker/provision.sh:ro
+    restart: "no"
+
+volumes:
+  openfire-data:
+  openfire-logs:
