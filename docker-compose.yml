@@ -57,7 +57,6 @@ services:
 
   # Let's Encrypt certificates for XMPP_DOMAIN, renewed automatically. Off unless the
   # "letsencrypt" profile is enabled (COMPOSE_PROFILES=letsencrypt in .env).
-  # Configure it in letsencrypt.env.
   letsencrypt:
     image: goacme/lego:v5.5.2
     profiles: ["letsencrypt"]
@@ -66,14 +65,12 @@ services:
       openfire-provision:
         condition: service_completed_successfully
     entrypoint: ["/bin/sh", "/docker/letsencrypt.sh"]
-    env_file:
-      - path: ./letsencrypt.env
-        required: false
     environment:
       XMPP_DOMAIN: ${XMPP_DOMAIN}
-      XMPP_FQDN: ${XMPP_FQDN}
+      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:-}
+      LETSENCRYPT_DOMAINS: ${LETSENCRYPT_DOMAINS:-}
     ports:
-      - "80:80"   # HTTP-01 challenge; unused with DNS-01
+      - "80:80"   # Let's Encrypt HTTP-01 challenge
     volumes:
       - letsencrypt-data:/data       # ACME account, certificates and keys
       - openfire-certs:/hotdeploy
