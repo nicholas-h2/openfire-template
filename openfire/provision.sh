@@ -1,6 +1,7 @@
 #!/bin/bash
 # One-shot provisioning, safe to re-run:
-#   1. turns on the REST API plugin (system properties, set through the admin console)
+#   1. sets system properties through the admin console: turns on the REST API plugin and
+#      points the Certificate Manager plugin at /hotdeploy (where letsencrypt.sh puts certs)
 #   2. creates the default MUC room through the REST API if it doesn't exist yet
 set -euo pipefail
 
@@ -45,6 +46,10 @@ set_property plugin.restapi.enabled true
 # The REST API plugin excludes its URLs from admin console auth with a wildcard pattern,
 # which Openfire ignores unless this is on.
 set_property adminConsole.access.allow-wildcards-in-excludes true
+
+set_property certificate-manager.directory-watcher.watched-path /hotdeploy
+set_property certificate-manager.directory-watcher.replace true
+set_property certificate-manager.directory-watcher.enabled true
 
 echo "Waiting for the REST API..."
 until [[ "$(api -o /dev/null -w '%{http_code}' "${API}/system/properties")" == 200 ]]; do sleep 2; done

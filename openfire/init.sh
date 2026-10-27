@@ -1,12 +1,13 @@
 #!/bin/bash
 # Wraps the image's entrypoint to pre-seed Openfire on first start:
 #   - renders openfire.xml (with the <autosetup> block) from the template
-#   - stages plugins: REST API (used by provision.sh to create the chat room) and
-#     inVerse (Converse.js web client at http://localhost:7070/inverse/)
+#   - stages plugins: REST API (used by provision.sh to create the chat room),
+#     inVerse (Converse.js web client at http://localhost:7070/inverse/) and
+#     Certificate Manager (installs Let's Encrypt certificates dropped into /hotdeploy)
 set -euo pipefail
 
 DATA_DIR="${OPENFIRE_DATA_DIR:-/var/lib/openfire}"
-PLUGINS=("restAPI:1.12.0" "inverse:14.0.0.1")
+PLUGINS=("restAPI:1.12.0" "inverse:14.0.0.1" "certificatemanager:1.2.0")
 
 # The stock entrypoint copies conf_org into the data volume only when the volume has no
 # conf/ yet, so swapping the template in here affects the first start and nothing after.

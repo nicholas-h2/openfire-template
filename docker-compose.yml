@@ -31,6 +31,7 @@ services:
     volumes:
       - openfire-data:/var/lib/openfire
       - openfire-logs:/var/log/openfire
+      - openfire-certs:/hotdeploy    # certificates from the letsencrypt service
       - ./openfire/init.sh:/docker/init.sh:ro
       - ./openfire/openfire.xml.template:/docker/openfire.xml.template:ro
     healthcheck:
@@ -40,7 +41,7 @@ services:
       start_period: 120s
       retries: 30
 
-  # One-shot job: creates the default chat room through the REST API, then exits.
+  # One-shot job: configures plugins and creates the default chat room, then exits.
   openfire-provision:
     image: ${OPENFIRE_IMAGE}
     depends_on:
@@ -54,6 +55,32 @@ services:
       - ./openfire/provision.sh:/docker/provision.sh:ro
     restart: "no"
 
+  # Let's Encrypt certificates for XMPP_DOMAIN, renewed automatically. Off unless the
+  # "letsencrypt" profile is enabled (COMPOSE_PROFILES=letsencrypt in .env).
+  # Configure it in letsencrypt.env.
+  letsencrypt:
+    image: goacme/lego:v5.5.2
+    profiles: ["letsencrypt"]
+    restart: unless-stopped
+    depends_on:
+      openfire-provision:
+        condition: service_completed_successfully
+    entrypoint: ["/bin/sh", "/docker/letsencrypt.sh"]
+    env_file:
+      - path: ./letsencrypt.env
+        required: false
+    environment:
+      XMPP_DOMAIN: ${XMPP_DOMAIN}
+      XMPP_FQDN: ${XMPP_FQDN}
+    ports:
+      - "80:80"   # HTTP-01 challenge; unused with DNS-01
+    volumes:
+      - letsencrypt-data:/data       # ACME account, certificates and keys
+      - openfire-certs:/hotdeploy
+      - ./openfire/letsencrypt.sh:/docker/letsencrypt.sh:ro
+
 volumes:
   openfire-data:
   openfire-logs:
+  openfire-certs:
+  letsencrypt-data:
